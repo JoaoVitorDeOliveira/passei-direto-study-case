@@ -1,1 +1,0 @@
-Criando estudo de caso
