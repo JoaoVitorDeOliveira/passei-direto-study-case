@@ -32,7 +32,7 @@ def main():
                                 record['StudentClient'] if 'StudentClient' in record else None)
             cursor.execute(postgres_insert_query, record_to_insert)
         connection.commit()
-        logger.debug("Record inserted successfully")
+        logger.debug("Records inserted successfully")
     except (Exception) as error :
         logger.error("Error while connecting to PostgreSQL: {}".format(error))
     finally:

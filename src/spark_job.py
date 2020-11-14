@@ -1,12 +1,13 @@
 #built-in
 import json
+import os
 
 #third-parties
 import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql.session import SparkSession, Row
 from pyspark.sql import SQLContext
-from pyspark.sql.types import StructField, StructType, StringType, IntegerType
+from pyspark.sql.types import StructField, StructType, StringType, IntegerType, LongType, BooleanType 
 from loguru import logger
 
 #custom
@@ -50,65 +51,100 @@ def dw_get_data(query):
 
     return courses
 
+@F.udf
+def clean_studentId(str_id):
+    split_id = str_id.split('@')
+    return split_id[0]
+
+
+@logger.catch
 def main():
-    records_list = get_unstructured_file()
-    schema = StructType([
-        StructField('at', StringType(), False),
-        StructField('browser', StringType(), False),
-        StructField('country', StringType(), False),
-        StructField('custom_4', StringType(), False),
-        StructField('studentId_clientType', StringType(), False),
-        StructField('Page Name', StringType(), False),
-        StructField('Last Accessed Url', StringType(), True)
-    ])
-
-    df = spark.createDataFrame([], schema)
-    for record in records_list:
-        df_result = spark.read.json(spark.sparkContext.parallelize([record]))
-        if not 'Last Accessed Url' in df.columns:
-            df_result.withColumn('Last Accessed Url', F.lit(''))
-        df_result = df_result.select('at', 
-                    'browser', 
-                    'country', 
-                    'custom_4', 
-                    'studentId_clientType', 
-                    'Page Name',
-                    'Last Accessed Url').fillna(0)
-        df = df.union(df_result)
-    df.show()
-
-    #postgres_insert_query = """SELECT * FROM "DM_PASSEI_DIRETO".dim_courses"""
-    #dim_courses = dw_get_data(postgres_insert_query)
+    #get_unstructured_file()
+    logger.debug('Downloaded Files')
 
     schema = StructType([
-        StructField('Id', IntegerType(), True),
-        StructField('Name', StringType(), True)
+        StructField('Last Accessed Url',StringType(),True)
+        ,StructField('Page Category',StringType(),True)
+        ,StructField('Page Category 1',StringType(),True)
+        ,StructField('Page Category 2',StringType(),True)
+        ,StructField('Page Category 3',StringType(),True)
+        ,StructField('Page Name',StringType(),True)
+        ,StructField('at',StringType(),True)
+        ,StructField('browser',StringType(),True)
+        ,StructField('carrier',StringType(),True)
+        ,StructField('city_name',StringType(),True)
+        ,StructField('clv_total',LongType(),True)
+        ,StructField('country',StringType(),True)
+        ,StructField('custom_1',StringType(),True)
+        ,StructField('custom_2',StringType(),True)
+        ,StructField('custom_3',StringType(),True)
+        ,StructField('custom_4',StringType(),True)
+        ,StructField('device_new',BooleanType(),True)
+        ,StructField('first-accessed-page',StringType(),True)
+        ,StructField('install_uuid',StringType(),True)
+        ,StructField('language',StringType(),True)
+        ,StructField('library_ver',StringType(),True)
+        ,StructField('marketing_campaign',StringType(),True)
+        ,StructField('marketing_medium',StringType(),True)
+        ,StructField('marketing_source',StringType(),True)
+        ,StructField('model',StringType(),True)
+        ,StructField('name',StringType(),True)
+        ,StructField('nth',LongType(),True)
+        ,StructField('os_ver',StringType(),True)
+        ,StructField('platform',StringType(),True)
+        ,StructField('region',StringType(),True)
+        ,StructField('session_uuid',StringType(),True)
+        ,StructField('studentId_clientType',StringType(),True)
+        ,StructField('type',StringType(),True)
+        ,StructField('user_type',StringType(),True)
+        ,StructField('uuid',StringType(),True)
     ])
 
-    schema = StructType([
-        StructField('at', StringType(), False),
-        StructField('browser', StringType(), False),
-        StructField('country', StringType(), False),
-        StructField('custom_4', StringType(), False),
-        StructField('studentId_clientType', StringType(), False),
-        StructField('Page Name', StringType(), False)
-    ])
+    logger.debug('Creating DataFrame...')
+    df = spark.read.schema(schema).json('*.json')
+    logger.debug('DataFrame created with {} rows'.format(df.count()))
+
+    #os.system('rm -r *.json')
+    logger.debug('Deleted json files')
+
+    df = df.select('at', 
+                'browser', 
+                'country', 
+                'custom_4', 
+                'studentId_clientType', 
+                'Page Name',
+                'Last Accessed Url') \
+            .filter(df['studentId_clientType'].isNotNull())
+
+    #df.select(df.country).filter(df.country != 'br').groupBy('country').count().show()
+    #df.filter(df.custom_4.isNotNull()).select(df.custom_4).groupBy(df.custom_4).count().show()
+
+    df_result = df.withColumn('id', clean_studentId(df['studentId_clientType']))
+    df_result = df_result.drop('studentId_clientType')
+    
+    #df_result.show()
+   
+    postgres_insert_query = """SELECT fat.id, state, city, cou.name course
+                                FROM "DM_PASSEI_DIRETO".fat_students fat
+                                INNER JOIN "DM_PASSEI_DIRETO".dim_courses cou
+                                ON fat.course_id = cou.id
+                                INNER JOIN "DM_PASSEI_DIRETO".dim_sessions ds 
+                                ON fat.id = ds.student_id 
+                                WHERE CAST(ds.start_time as VARCHAR) LIKE '2017-11-16%'"""
+    students = dw_get_data(postgres_insert_query)
 
     dim_schema = StructType([
-        StructField('SK_Courses', IntegerType(), True),
-        StructField('Id', IntegerType(), True),
-        StructField('Name', StringType(), True),
-        StructField('Change_Date', StringType(), True)
+        StructField('id', StringType(), True),
+        StructField('state', StringType(), True),
+        StructField('city', StringType(), True),
+        StructField('course', StringType(), True)
     ])
 
-    #df = spark.createDataFrame(json.loads(json.dumps(records_list[0])))
-    #df.show()
-
-    #df_dim = spark.createDataFrame(dim_courses, dim_schema)
+    df_dim = spark.createDataFrame(students, dim_schema)
     #df_dim.show()
 
-    #df = df.join(df_dim, 'Id', how='left')
-    #df.show()
+    df_result = df_result.join(df_dim, 'id', how='inner').distinct()
+    df_result.show(100)    
 
 
 if __name__ == "__main__":

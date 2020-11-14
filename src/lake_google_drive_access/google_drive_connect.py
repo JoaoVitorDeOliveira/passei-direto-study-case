@@ -31,17 +31,11 @@ def get_unstructured_file():
     drive = _google_connect()
 
     file_list = drive.ListFile({'q': "'1mmJbjh4LznzE9EcMHF4E4RUkxjGz0t2Y' in parents and trashed=false"}).GetList()
-    records_list = []
 
     for file1 in file_list: 
-        if file1['title'] == 'part-00000.json':
-            logger.debug('Processing File {}'.format(file1['title']))
-            body = file1.GetContentString().split('\n')
-            records_list += body
-
-    logger.debug('Size records: {}'.format(len(records_list)))
-    print(records_list[0])
-    return records_list
+        logger.debug('Processing File {}'.format(file1['title']))
+        file1.GetContentFile(file1['title'])
+    
 
 
 def _google_connect():
