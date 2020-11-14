@@ -1,63 +1,48 @@
-import json
+#built-in
 
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-import psycopg2
+#third-parties
+from loguru import logger
 
+#custom
+from lake_google_drive_access.google_drive_connect import get_file
+from database_access.postgres_connect import get_database_credentials
 
-gauth = GoogleAuth()
-# Try to load saved client credentials
-gauth.LoadCredentialsFile("mycreds.txt")
-if gauth.credentials is None:
-    # Authenticate if they're not there
-    gauth.LocalWebserverAuth()
-elif gauth.access_token_expired:
-    # Refresh them if expired
-    gauth.Refresh()
-else:
-    # Initialize the saved creds
-    gauth.Authorize()
-# Save the current credentials to a file
-gauth.SaveCredentialsFile("mycreds.txt")
-drive = GoogleDrive(gauth)
+@logger.catch
+def main():
+    try:
+        truncate_table = """TRUNCATE TABLE "STAGE_PASSEI_DIRETO".stg_dim_sessions"""
 
+        connection = get_database_credentials()
+        logger.debug("Get the database credentials")
 
-file_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
-students_list = []
+        cursor = connection.cursor()
+        cursor.execute(truncate_table)
+        logger.debug("Truncate Table STG_DIM_SESSIONS")
 
-for file1 in file_list:
-    if file1['title'] == 'sessions.json':
-        body = file1.GetContentString()
-        students_list = json.loads(body)
-        print(len(students_list))
+        records_list = get_file('sessions.json')
+        logger.debug('Retrieved {} records from file "sessions.json"'.format(len(records_list)))
 
-try: 
-    connection = psycopg2.connect(user = "hkmwrxkewkhzrh",
-                                    password = "a8f37ea49b38f2d3d07d853b15ed59e0a7b5edaea657c3450c970dd8b9038a57",
-                                    host = "ec2-54-91-178-234.compute-1.amazonaws.com",
-                                    port = "5432",
-                                    database = "de6eje61ar0ot3")
+        #Heroku databse has 10000 limits line, so I will retrieve only 500 lines from the files
+        for record in records_list[0:500]:
+            postgres_insert_query = """ INSERT INTO "STAGE_PASSEI_DIRETO".stg_dim_sessions
+                                        (student_id, start_time, student_client)
+                                        VALUES(%s,%s,%s);"""
+            record_to_insert = (record['StudentId'] if 'StudentId' in record else None, 
+                                record['SessionStartTime'] if 'SessionStartTime' in record else None,
+                                record['StudentClient'] if 'StudentClient' in record else None)
+            cursor.execute(postgres_insert_query, record_to_insert)
+        connection.commit()
+        logger.debug("Record inserted successfully")
+    except (Exception) as error :
+        logger.error("Error while connecting to PostgreSQL: {}".format(error))
+    finally:
+        #closing database connection.
+        cursor.close()
+        connection.close()
+        logger.warning("PostgreSQL connection is closed")
 
-    cursor = connection.cursor()
-    for student in students_list[0:500]:
-        postgres_insert_query = """ INSERT INTO "STAGE_PASSEI_DIRETO".stg_dim_sessions
-                                    (student_id, start_time, student_client)
-                                    VALUES(%s,%s,%s);"""
-        record_to_insert = (student['StudentId'] if 'StudentId' in student else None, 
-                            student['SessionStartTime'] if 'SessionStartTime' in student else None,
-                            student['StudentClient'] if 'StudentClient' in student else None)
-        cursor.execute(postgres_insert_query, record_to_insert)
-    connection.commit()
-    count = cursor.rowcount
-    print (count, "Record inserted successfully")
-except (Exception, psycopg2.Error) as error :
-    print ("Error while connecting to PostgreSQL", error)
-finally:
-    #closing database connection.
-        if(connection):
-            cursor.close()
-            connection.close()
-            print("PostgreSQL connection is closed")
+if __name__ == '__main__':
+    main()
 
 
   
