@@ -4,32 +4,23 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import psycopg2
 
+gauth = GoogleAuth()
+# Try to load saved client credentials
+gauth.LoadCredentialsFile("mycreds.txt")
+if gauth.credentials is None:
+    # Authenticate if they're not there
+    gauth.LocalWebserverAuth()
+elif gauth.access_token_expired:
+    # Refresh them if expired
+    gauth.Refresh()
+else:
+    # Initialize the saved creds
+    gauth.Authorize()
+# Save the current credentials to a file
+gauth.SaveCredentialsFile("mycreds.txt")
+drive = GoogleDrive(gauth)
 
-
-try: 
-    connection = psycopg2.connect(user = "hkmwrxkewkhzrh",
-                                    password = "a8f37ea49b38f2d3d07d853b15ed59e0a7b5edaea657c3450c970dd8b9038a57",
-                                    host = "ec2-54-91-178-234.compute-1.amazonaws.com",
-                                    port = "5432",
-                                    database = "de6eje61ar0ot3")
-
-    cursor = connection.cursor()
-
-    postgres_insert_query = """ SELECT * FROM "STAGE_PASSEI_DIRETO".stg_dim_courses
-                                    """
-        #record_to_insert = (student['Id'] if 'Id' in student else None, 
-        #                    student['Name'] if 'Name' in student else None)
-    cursor.execute(postgres_insert_query)
-    courses = cursor.fetchall() 
-    print (type(courses))
-except (Exception, psycopg2.Error) as error :
-    print ("Error while connecting to PostgreSQL", error)
-finally:
-    #closing database connection.
-        if(connection):
-            cursor.close()
-            connection.close()
-            print("PostgreSQL connection is closed")
-
-
+file1 = drive.CreateFile({'parents': [{'kind': 'drive#fileLink', 'id': '143WlS7ryr2w6wmNIeR_AGGdQ9_bPXUnm'}]})
+file1.SetContentFile('./result/part-00000-92f59061-e8f5-4030-a248-127bd537065f-c000.csv')
+file1.Upload()
   

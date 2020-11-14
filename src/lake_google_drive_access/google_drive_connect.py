@@ -25,7 +25,7 @@ def get_file(file):
             body = file1.GetContentString()
             records_list = json.loads(body)
 
-    return records_list
+    return records_list[:500]
 
 def get_unstructured_file():
     drive = _google_connect()
@@ -36,7 +36,12 @@ def get_unstructured_file():
         logger.debug('Processing File {}'.format(file1['title']))
         file1.GetContentFile(file1['title'])
     
+def send_file(path):
+    drive = _google_connect()
 
+    file1 = drive.CreateFile({'parents': [{'kind': 'drive#fileLink', 'id': '143WlS7ryr2w6wmNIeR_AGGdQ9_bPXUnm'}]})
+    file1.SetContentFile(path)
+    file1.Upload()
 
 def _google_connect():
     """Get the credentials from Google Drive, with 'mycreds.txt' file we can access

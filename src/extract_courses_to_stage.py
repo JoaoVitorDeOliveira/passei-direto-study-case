@@ -17,7 +17,7 @@ try:
 
     records_list = get_file('courses.json')
 
-    for record in records_list[0:500]:
+    for record in records_list:
         postgres_insert_query = """ INSERT INTO "STAGE_PASSEI_DIRETO".stg_dim_courses
                                     (id, "name")
                                     VALUES(%s,%s);"""

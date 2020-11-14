@@ -11,7 +11,7 @@ from pyspark.sql.types import StructField, StructType, StringType, IntegerType, 
 from loguru import logger
 
 #custom
-from lake_google_drive_access.google_drive_connect import get_unstructured_file
+from lake_google_drive_access.google_drive_connect import get_unstructured_file, send_file
 from database_access.postgres_connect import get_database_credentials
 
 spark = SparkSession.builder \
@@ -116,36 +116,43 @@ def main():
                 'Last Accessed Url') \
             .filter(df['studentId_clientType'].isNotNull())
 
-    #df.select(df.country).filter(df.country != 'br').groupBy('country').count().show()
-    #df.filter(df.custom_4.isNotNull()).select(df.custom_4).groupBy(df.custom_4).count().show()
+    df_country = df.select(df.country) \
+        .filter(df.country != 'br') \
+        .groupBy('country').count() 
+    df_country.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('./')
+
+
+    df_users = df.filter(df.custom_4.isNotNull()) \
+                .select(df.custom_4) \
+                .groupBy(df.custom_4).count()
+    df_users.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('./')
+
 
     df_result = df.withColumn('id', clean_studentId(df['studentId_clientType']))
     df_result = df_result.drop('studentId_clientType')
-    
-    #df_result.show()
    
-    postgres_insert_query = """SELECT fat.id, state, city, cou.name course
+    query = """SELECT fat.id, state, city, cou.name course
                                 FROM "DM_PASSEI_DIRETO".fat_students fat
                                 INNER JOIN "DM_PASSEI_DIRETO".dim_courses cou
                                 ON fat.course_id = cou.id
                                 INNER JOIN "DM_PASSEI_DIRETO".dim_sessions ds 
                                 ON fat.id = ds.student_id 
                                 WHERE CAST(ds.start_time as VARCHAR) LIKE '2017-11-16%'"""
-    students = dw_get_data(postgres_insert_query)
+    students = dw_get_data(query)
 
-    dim_schema = StructType([
+    students_schema = StructType([
         StructField('id', StringType(), True),
         StructField('state', StringType(), True),
         StructField('city', StringType(), True),
         StructField('course', StringType(), True)
     ])
 
-    df_dim = spark.createDataFrame(students, dim_schema)
-    #df_dim.show()
+    df_dim = spark.createDataFrame(students, students_schema)
 
     df_result = df_result.join(df_dim, 'id', how='inner').distinct()
-    df_result.show(100)    
+    df_result.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('./result')
 
+    send_file('./result/*.csv')
 
 if __name__ == "__main__":
     try:
