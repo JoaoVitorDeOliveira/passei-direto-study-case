@@ -22,7 +22,6 @@ def main():
         records_list = get_file('sessions.json')
         logger.debug('Retrieved {} records from file "sessions.json"'.format(len(records_list)))
 
-        #Heroku databse has 10000 limits line, so I will retrieve only 500 lines from the files
         for record in records_list:
             postgres_insert_query = """ INSERT INTO "STAGE_PASSEI_DIRETO".stg_dim_sessions
                                         (student_id, start_time, student_client)

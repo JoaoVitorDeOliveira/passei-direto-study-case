@@ -1,4 +1,5 @@
 import json
+import glob
 
 import psycopg2
 from loguru import logger
@@ -22,26 +23,38 @@ def get_file(file):
 
     for file1 in file_list: 
         if file1['title'] == file:
+            logger.debug('Get {} records'.format(file1['title']))
             body = file1.GetContentString()
             records_list = json.loads(body)
-
+    #Heroku databse has 10000 limits line, so I will retrieve only 500 lines from the files
     return records_list[:500]
 
 def get_unstructured_file():
+    """Get all Events Files from Raw
+    """    
     drive = _google_connect()
 
-    file_list = drive.ListFile({'q': "'1mmJbjh4LznzE9EcMHF4E4RUkxjGz0t2Y' in parents and trashed=false"}).GetList()
+    file_list = drive.ListFile({'q': "'1qmyyIJnRK_c6tZP_s5Rsk1zz1p1JI73A' in parents and trashed=false"}).GetList()
 
     for file1 in file_list: 
         logger.debug('Processing File {}'.format(file1['title']))
         file1.GetContentFile(file1['title'])
     
-def send_file(path):
+def send_files(path):
+    """Send CSV Generated files to Drive
+
+    Args:
+        path ([string]): [path of the csv files]
+    """    
     drive = _google_connect()
 
-    file1 = drive.CreateFile({'parents': [{'kind': 'drive#fileLink', 'id': '143WlS7ryr2w6wmNIeR_AGGdQ9_bPXUnm'}]})
-    file1.SetContentFile(path)
-    file1.Upload()
+    csv_files = glob.glob(path)
+    for csv in csv_files:
+        file1 = drive.CreateFile({'parents': [{'kind': 'drive#fileLink', 'id': '143WlS7ryr2w6wmNIeR_AGGdQ9_bPXUnm'}]})
+        logger.debug("Sending {} file...".format(csv))
+        file1.SetContentFile(csv)
+        file1.Upload()
+        logger.success("Done!!")
 
 def _google_connect():
     """Get the credentials from Google Drive, with 'mycreds.txt' file we can access

@@ -11,7 +11,7 @@ from pyspark.sql.types import StructField, StructType, StringType, IntegerType, 
 from loguru import logger
 
 #custom
-from lake_google_drive_access.google_drive_connect import get_unstructured_file, send_file
+from lake_google_drive_access.google_drive_connect import get_unstructured_file, send_files
 from database_access.postgres_connect import get_database_credentials
 
 spark = SparkSession.builder \
@@ -59,8 +59,8 @@ def clean_studentId(str_id):
 
 @logger.catch
 def main():
-    #get_unstructured_file()
-    logger.debug('Downloaded Files')
+    get_unstructured_file()
+    logger.success('Downloaded Files')
 
     schema = StructType([
         StructField('Last Accessed Url',StringType(),True)
@@ -102,10 +102,7 @@ def main():
 
     logger.debug('Creating DataFrame...')
     df = spark.read.schema(schema).json('*.json')
-    logger.debug('DataFrame created with {} rows'.format(df.count()))
-
-    #os.system('rm -r *.json')
-    logger.debug('Deleted json files')
+    logger.success('DataFrame created with {} rows'.format(df.count()))
 
     df = df.select('at', 
                 'browser', 
@@ -119,14 +116,15 @@ def main():
     df_country = df.select(df.country) \
         .filter(df.country != 'br') \
         .groupBy('country').count() 
-    df_country.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('./')
+    #df_country.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('country')
+    
 
 
     df_users = df.filter(df.custom_4.isNotNull()) \
                 .select(df.custom_4) \
                 .groupBy(df.custom_4).count()
-    df_users.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('./')
-
+    #df_users.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('user.csv')
+    
 
     df_result = df.withColumn('id', clean_studentId(df['studentId_clientType']))
     df_result = df_result.drop('studentId_clientType')
@@ -150,15 +148,29 @@ def main():
     df_dim = spark.createDataFrame(students, students_schema)
 
     df_result = df_result.join(df_dim, 'id', how='inner').distinct()
-    df_result.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('./result')
+    #df_result.repartition(1).write.format('csv').mode('overwrite').option('header', 'true').save('full.csv')
+    
+    df_country.toPandas().to_csv('country.csv')
+    df_users.toPandas().to_csv('users.csv')
+    df_result.toPandas().to_csv('full.csv')
+    send_files('*.csv')
 
-    send_file('./result/*.csv')
+    os.system('rm -r *.json')
+    logger.success('Deleted json files')
+
+    os.system('rm -r *.csv')
+    logger.success('Deleted csv files')
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        print(e)
+        logger.error(e)
+    finally:
+        os.system('rm -r *.json')
+        logger.success('Deleted json files')
 
+        os.system('rm -r *.csv')
+        logger.success('Deleted csv files')
 
   
