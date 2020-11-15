@@ -1,66 +1,50 @@
-import json
+#built-in
 
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-import psycopg2
+#third-parties
+from loguru import logger
 
+#custom
+from lake_google_drive_access.google_drive_connect import get_file
+from database_access.postgres_connect import get_database_credentials
 
-gauth = GoogleAuth()
-# Try to load saved client credentials
-gauth.LoadCredentialsFile("mycreds.txt")
-if gauth.credentials is None:
-    # Authenticate if they're not there
-    gauth.LocalWebserverAuth()
-elif gauth.access_token_expired:
-    # Refresh them if expired
-    gauth.Refresh()
-else:
-    # Initialize the saved creds
-    gauth.Authorize()
-# Save the current credentials to a file
-gauth.SaveCredentialsFile("mycreds.txt")
-drive = GoogleDrive(gauth)
+@logger.catch
+def main():
+    try:
+        truncate_table = """TRUNCATE TABLE "STAGE_PASSEI_DIRETO".stg_fat_students"""
 
+        connection = get_database_credentials()
+        logger.debug("Get the database credentials")
 
-file_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
-students_list = []
+        cursor = connection.cursor()
+        cursor.execute(truncate_table)
+        logger.debug("Truncate Table stg_fat_students")
 
-for file1 in file_list:
-    if file1['title'] == 'students.json':
-        body = file1.GetContentString()
-        students_list = json.loads(body)
+        records_list = get_file('students.json')
+        logger.debug('Retrieved {} records from file "students.json"'.format(len(records_list)))
+        logger.debug('Inserting records...')
+        for record in records_list:
+            postgres_insert_query = """ INSERT INTO "STAGE_PASSEI_DIRETO".stg_fat_students
+            (id, registered_data, state, city, university_id, course_id, signup_source)
+            VALUES(%s,%s,%s,%s,%s,%s,%s);"""
+            record_to_insert = (record['Id'] if 'Id' in record else None, 
+                                record['RegisteredDate'] if 'RegisteredDate' in record else None, 
+                                record['State'] if 'State' in record else None, 
+                                record['City'] if 'City' in record else None,
+                                record['UniversityId'] if 'UniversityId' in record else None,
+                                record['CourseId'] if 'CourseId' in record else None,
+                                record['SignupSource'] if 'SignupSource' in record else None)
+            cursor.execute(postgres_insert_query, record_to_insert)
+        connection.commit()
+        logger.debug("Records inserted successfully")
+    except (Exception) as error :
+        logger.error("Error while connecting to PostgreSQL: {}".format(error))
+    finally:
+        #closing database connection.
+        cursor.close()
+        connection.close()
+        logger.warning("PostgreSQL connection is closed")
 
-try: 
-    connection = psycopg2.connect(user = "hkmwrxkewkhzrh",
-                                    password = "a8f37ea49b38f2d3d07d853b15ed59e0a7b5edaea657c3450c970dd8b9038a57",
-                                    host = "ec2-54-91-178-234.compute-1.amazonaws.com",
-                                    port = "5432",
-                                    database = "de6eje61ar0ot3")
-
-    cursor = connection.cursor()
-    for student in students_list[0:500]:
-        postgres_insert_query = """ INSERT INTO "STAGE_PASSEI_DIRETO".stg_fat_students
-        (id, registered_data, state, city, university_id, course_id, signup_source)
-        VALUES(%s,%s,%s,%s,%s,%s,%s);"""
-        record_to_insert = (student['Id'] if 'Id' in student else None, 
-                            student['RegisteredDate'] if 'RegisteredDate' in student else None, 
-                            student['State'] if 'State' in student else None, 
-                            student['City'] if 'City' in student else None,
-                            student['UniversityId'] if 'UniversityId' in student else None,
-                            student['CourseId'] if 'CourseId' in student else None,
-                            student['SignupSource'] if 'SignupSource' in student else None)
-        cursor.execute(postgres_insert_query, record_to_insert)
-    connection.commit()
-    count = cursor.rowcount
-    print (count, "Record inserted successfully")
-except (Exception, psycopg2.Error) as error :
-    print ("Error while connecting to PostgreSQL", error)
-finally:
-    #closing database connection.
-        if(connection):
-            cursor.close()
-            connection.close()
-            print("PostgreSQL connection is closed")
-
+if __name__ == '__main__':
+    main()
 
   

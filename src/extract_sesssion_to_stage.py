@@ -18,7 +18,7 @@ def main():
         cursor = connection.cursor()
         cursor.execute(truncate_table)
         logger.debug("Truncate Table STG_DIM_SESSIONS")
-
+        logger.debug('Inserting records...')
         records_list = get_file('sessions.json')
         logger.debug('Retrieved {} records from file "sessions.json"'.format(len(records_list)))
 
