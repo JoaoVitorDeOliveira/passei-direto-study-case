@@ -155,19 +155,13 @@ def main():
     df_result.toPandas().to_csv('full.csv')
     send_files('*.csv')
 
-    os.system('rm -r *.json')
-    logger.success('Deleted json files')
-
-    os.system('rm -r *.csv')
-    logger.success('Deleted csv files')
-
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
         logger.error(e)
     finally:
-        os.system('rm -r *.json')
+        #os.system('rm -r *.json')
         logger.success('Deleted json files')
 
         os.system('rm -r *.csv')
