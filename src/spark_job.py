@@ -161,10 +161,12 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(e)
     finally:
-        #os.system('rm -r *.json')
+        os.system('rm -r *.json')
         logger.success('Deleted json files')
 
         os.system('rm -r *.csv')
         logger.success('Deleted csv files')
+
+        os.system('cp ./lake_google_drive_access/client_secrets.json .')
 
   
