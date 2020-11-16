@@ -6,7 +6,7 @@ Fiz toda a arquitetura utilizando ferramentas gratuitas para não expor dados se
 # Funcionamento
 Eu criei uma instância do airflow em nuvem que pode ser acessada por esse link com o fluxo de extração de dados.
 ```
-https://airflow-etl-manual.herokuapp.com/admin/airflow/tree?dag_id=Passei_Direto
+(https://airflow-etl-manual.herokuapp.com/admin/airflow/tree?dag_id=Passei_Direto)
 ```
 > Quando acessar pela primeira vez pode levar em torno de 20 a 30 segundos para carregar a página pois a máquina pode estar em repouso.
 
@@ -18,7 +18,7 @@ host = "ec2-54-91-178-234.compute-1.amazonaws.com",
 port = "5432",
 database = "de6eje61ar0ot3"
 ```
-Caso queira trocar para um banco local basta inserir as credencias em ```passei-direto-study-case/src/database_access/postgres_connect.py``` e rodar o DDL na base que se encontra em ```passei-direto-study-case/sql/ddl/```.
+Caso queira trocar para um banco local basta inserir as credencias em ```passei-direto-study-case/src/database_access/postgres_connect.py``` e rodar o DDL na base que se encontra em ```passei-direto-study-case/sql/DDL/```.
 
 Para rodar a aplicação local basta criar um *ambiente virtual python* e instalar as dependencias com o ```pip```.
 ```
@@ -71,7 +71,6 @@ O Job busca os dados gerados por eventos dos usuários e concatena com os dados 
 # Heroku e Airflow
 > Quando acessar pela primeira vez pode levar em torno de 20 a 30 segundos para carregar a página pois a máquina pode estar em repouso
 
-https://airflow-etl-manual.herokuapp.com/admin/
 Para deixar mais fácil a análise da arquitetura eu usei a plataforma como serviço heroku, eles consedem até 5 aplicações e banco de dados em EC2 gratuitas com o limite de 10 mil registros salvos. Para orquestrar o consumo dos dados e manter atualizado a base estou usando o Airflow.
 
 
