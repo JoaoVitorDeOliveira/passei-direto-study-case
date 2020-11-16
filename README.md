@@ -53,4 +53,7 @@ Para demonstrar como os dados na zona analitycs podem ser consumidos po ruma pos
 
 
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
