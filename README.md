@@ -42,6 +42,7 @@ Também criei um shell-script local para automatizar os jobs, basta rodar ```./s
 Por fim subi uma instância do **streamlit** para consumir os dados gerados pelo spark e gerar gráficos e análises.
 
 https://secure-scrubland-89533.herokuapp.com
+![alt text](https://github.com/JoaoVitorDeOliveira/passei-direto-study-case/blob/master/media/streamlit.png)
 
 
 # Modelagem Lógica e Física do DataWarehouse
@@ -82,6 +83,6 @@ Para deixar mais fácil a análise da arquitetura eu usei a plataforma como serv
 
 
 # Streamlit
-Para demonstrar como os dados na zona analitycs podem ser consumidos po ruma possível ferramenta de vizualização ou um cientista, eu estou usando o Streamlit(uma ferramenta open source para análise de dados e publicação web https://www.streamlit.io), nesse caso mostro os países de fora que tiveram mais de 100 acessos em novembro de 2017.
-![alt text](https://github.com/JoaoVitorDeOliveira/passei-direto-study-case/blob/master/media/streamlit.png)
+Para demonstrar como os dados na zona analitycs podem ser consumidos po ruma possível ferramenta de vizualização ou um cientista, eu estou usando o Streamlit(uma ferramenta open source para análise de dados e publicação web https://www.streamlit.io).
+
 
