@@ -1,7 +1,14 @@
 # Passei Direto Estudo de Caso
 
 Criação da arquitetura de BI em um estudo de caso criado pela Passei Direto.
-Fiz toda a arquitetura utilizando ferramentas gratuitas para não receber gastos inesperados.
+Fiz toda a arquitetura utilizando ferramentas gratuitas para não expor dados sensíveis nem gastos inesperados.
+
+# Rodar
+Para rodar a aplicação basta criar um 'ambiente virtual python' e instalar as dependencias com o 'pip'.
+
+>virtualenv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
 # Modelagem Lógica e Física do DataWarehouse
 Fiz o desenho da modelagem com o programa StarUML, com base nos arquivos transacionais usei uma modelagem SnowFlake separando 
