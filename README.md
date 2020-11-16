@@ -5,9 +5,9 @@ Fiz toda a arquitetura utilizando ferramentas gratuitas para não expor dados se
 
 # Funcionamento
 Eu criei uma instância do airflow em nuvem que pode ser acessada por esse link com o fluxo de extração de dados.
-```
+
 https://airflow-etl-manual.herokuapp.com/admin/airflow/tree?dag_id=Passei_Direto
-```
+
 > Quando acessar pela primeira vez pode levar em torno de 20 a 30 segundos para carregar a página pois a máquina pode estar em repouso.
 
 E o DW pode ser conectado usando essas credenciais(ex: DBeaver), ele é limitado por 10 mil linhas, no código eu limito em 500 inserts por dimensão.
@@ -18,9 +18,16 @@ host = "ec2-54-91-178-234.compute-1.amazonaws.com",
 port = "5432",
 database = "de6eje61ar0ot3"
 ```
-Caso queira trocar para um banco local basta inserir as credencias em ```passei-direto-study-case/src/database_access/postgres_connect.py``` e rodar o DDL na base que se encontra em ```passei-direto-study-case/sql/ddl/```.
+Caso queira trocar para um banco local basta inserir as credencias em ```passei-direto-study-case/src/database_access/postgres_connect.py``` e rodar o DDL na base que se encontra em ```passei-direto-study-case/sql/DDL/```.
 
-Para rodar a aplicação local basta criar um *ambiente virtual python* e instalar as dependencias com o ```pip```.
+Usei como lake o Google Drive, criei uma conta gmail para isso. Caso queiram adicionar dados segue as credenciais.
+```
+pdcasestudy@gmail.com
+passeidireto2020
+```
+
+
+Para rodar a aplicação local basta criar um **ambiente virtual python** e instalar as dependencias com o ```pip```.
 ```
 virtualenv .venv
 source .venv/bin/activate
@@ -30,12 +37,13 @@ Tentei integrar um cluster spark do databricks gratuito em nuvem porém sem suce
 ```
 {SPARK_PATH}/bin/spark-submit /src/spark_job.py
 ```
-Também criei um shell-script local para automatizar os jobs, basta rodar './src/automation.sh' dentro do ambiente virtual.
+Também criei um shell-script local para automatizar os jobs, basta rodar ```./src/automation.sh``` dentro do ambiente virtual.
 
-Por fim subi uma instância do streamlit para consumir os dados gerados pelo spark e gerar gráficos e análises.
-```
+Por fim subi uma instância do **streamlit** para consumir os dados gerados pelo spark e gerar gráficos e análises.
+
 https://secure-scrubland-89533.herokuapp.com
-```
+![alt text](https://github.com/JoaoVitorDeOliveira/passei-direto-study-case/blob/master/media/streamlit.png)
+
 
 # Modelagem Lógica e Física do DataWarehouse
 Fiz o desenho da modelagem com o programa StarUML, com base nos arquivos transacionais usei uma modelagem SnowFlake separando 
@@ -71,11 +79,10 @@ O Job busca os dados gerados por eventos dos usuários e concatena com os dados 
 # Heroku e Airflow
 > Quando acessar pela primeira vez pode levar em torno de 20 a 30 segundos para carregar a página pois a máquina pode estar em repouso
 
-https://airflow-etl-manual.herokuapp.com/admin/
 Para deixar mais fácil a análise da arquitetura eu usei a plataforma como serviço heroku, eles consedem até 5 aplicações e banco de dados em EC2 gratuitas com o limite de 10 mil registros salvos. Para orquestrar o consumo dos dados e manter atualizado a base estou usando o Airflow.
 
 
 # Streamlit
-Para demonstrar como os dados na zona analitycs podem ser consumidos po ruma possível ferramenta de vizualização ou um cientista, eu estou usando o Streamlit(uma ferramenta open source para análise de dados e publicação web https://www.streamlit.io), nesse caso mostro os países de fora que tiveram mais de 100 acessos em novembro de 2017.
-![alt text](https://github.com/JoaoVitorDeOliveira/passei-direto-study-case/blob/master/media/streamlit.png)
+Para demonstrar como os dados na zona analitycs podem ser consumidos po ruma possível ferramenta de vizualização ou um cientista, eu estou usando o Streamlit(uma ferramenta open source para análise de dados e publicação web https://www.streamlit.io).
+
 
