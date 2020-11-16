@@ -2,7 +2,7 @@ import json
 import glob
 
 import psycopg2
-from loguru import logger
+#from loguru import logger
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
@@ -23,7 +23,7 @@ def get_file(file):
 
     for file1 in file_list: 
         if file1['title'] == file:
-            logger.debug('Get {} records'.format(file1['title']))
+            #logger.debug('Get {} records'.format(file1['title']))
             body = file1.GetContentString()
             records_list = json.loads(body)
     #Heroku databse has 10000 limits line, so I will retrieve only 500 lines from the files
@@ -37,7 +37,7 @@ def get_unstructured_file():
     file_list = drive.ListFile({'q': "'1qmyyIJnRK_c6tZP_s5Rsk1zz1p1JI73A' in parents and trashed=false"}).GetList()
 
     for file1 in file_list: 
-        logger.debug('Processing File {}'.format(file1['title']))
+        #logger.debug('Processing File {}'.format(file1['title']))
         file1.GetContentFile(file1['title'])
     
 def send_files(path):
@@ -51,10 +51,10 @@ def send_files(path):
     csv_files = glob.glob(path)
     for csv in csv_files:
         file1 = drive.CreateFile({'parents': [{'kind': 'drive#fileLink', 'id': '143WlS7ryr2w6wmNIeR_AGGdQ9_bPXUnm'}]})
-        logger.debug("Sending {} file...".format(csv))
+        #logger.debug("Sending {} file...".format(csv))
         file1.SetContentFile(csv)
         file1.Upload()
-        logger.success("Done!!")
+        #logger.success("Done!!")
 
 def _google_connect():
     """Get the credentials from Google Drive, with 'mycreds.txt' file we can access
