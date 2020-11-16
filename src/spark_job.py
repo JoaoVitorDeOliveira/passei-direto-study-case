@@ -18,30 +18,6 @@ spark = SparkSession.builder \
     .appName("Students Behavior") \
     .getOrCreate()
 
-database = 'jdbc:postgresql://ec2-54-91-178-234.compute-1.amazonaws.com'
-username = 'hkmwrxkewkhzrh'
-password = 'a8f37ea49b38f2d3d07d853b15ed59e0a7b5edaea657c3450c970dd8b9038a57'
-driver_postgress = 'postgresql-42.2.18.jar'
-
-def execute_query(server, query, driver):
-    df = spark.read.format('jdbc') \
-        .option("driver", "org.postgresql.Driver") \
-        .option('url', server) \
-        .option('dbtable', query) \
-        .option('user', username) \
-        .option('password', password) \
-        .load()
-
-    return df
-
-def get_students():
-    query = """
-        SELECT *
-        FROM DM_PASSEI_DIRETO.fat_students
-    """
-    resultset = execute_query(database, query, driver_postgress)
-    return resultset
-
 def dw_get_data(query):
     connection = get_database_credentials()
     cursor = connection.cursor()

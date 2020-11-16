@@ -50,4 +50,4 @@ echo "Load fat_students_load.sql"
 python load_dim.py fat_students_load.sql
 
 echo "Start Spark Job"
- /mnt/c/Users/Joao/spark-3.0.0-preview2-bin-hadoop2.7/bin/spark-submit spark_job.py
+spark-submit spark_job.py
